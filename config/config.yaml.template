@@ -1,0 +1,65 @@
+# EarnApp RebornX Configuration Template
+
+# General Settings
+general:
+  debug: false
+  log_level: INFO
+  data_dir: ./data
+  temp_dir: ./temp
+
+# Proxy Settings
+proxy:
+  enabled: true
+  type: http  # http or socks5
+  timeout: 30
+  max_retries: 3
+  check_interval: 300  # seconds
+  max_fails: 3
+  rotation_interval: 3600  # seconds
+
+# Resource Management
+resources:
+  cpu_limit: 2
+  memory_limit: 2048  # MB
+  disk_limit: 10240  # MB
+  network_limit: 100  # Mbps
+
+# Monitoring
+monitoring:
+  enabled: true
+  interval: 60  # seconds
+  metrics_retention: 86400  # seconds (24 hours)
+  alert_threshold:
+    cpu: 80
+    memory: 80
+    disk: 80
+    network: 80
+
+# Security
+security:
+  api_key: ""  # Set your API key here
+  ssl_verify: true
+  allowed_ips: []  # List of allowed IP addresses
+
+# Dashboard
+dashboard:
+  enabled: true
+  host: 0.0.0.0
+  port: 8081
+  username: admin
+  password: ""  # Set your password here
+  theme: dark  # light or dark
+
+# Backup
+backup:
+  enabled: true
+  interval: 86400  # seconds (24 hours)
+  retention: 7  # days
+  path: ./backups
+
+# Updates
+updates:
+  auto_check: true
+  check_interval: 86400  # seconds (24 hours)
+  auto_install: false
+  channel: stable  # stable or beta 
