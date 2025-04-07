@@ -9,7 +9,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(script_dir)
 sys.path.append(parent_dir)
 
-from utils.fn_install_docker import main, is_docker_installed, install_docker_linux, install_docker_windows, install_docker_macos
+from utils.fn_install_docker import main, is_docker_installed, install_docker_linux, install_docker_windows, install_docker_macos, install_docker_wsl
 
 class TestFnInstallDocker(unittest.TestCase):
 
@@ -18,7 +18,7 @@ class TestFnInstallDocker(unittest.TestCase):
     @patch('utils.fn_install_docker.subprocess.run')
     def test_is_docker_installed(self, mock_run, mock_detect_architecture, mock_detect_os):
         mock_run.side_effect = subprocess.CalledProcessError(1, 'docker')
-        mock_detect_os.return_value = {"os_type": "linux"}
+        mock_detect_os.return_value = {"os_type": "linux", "is_wsl": False}
         mock_detect_architecture.return_value = {"dkarch": "amd64"}
 
         m4b_config = {"system": {"sleep_time": 1}}
@@ -83,8 +83,6 @@ class TestFnInstallDocker(unittest.TestCase):
         # Assert that the installer executable was removed after installation
         mock_remove.assert_called_once_with(os.path.join(files_path, 'DockerInstaller.exe'))
 
-
-
     @patch('utils.fn_install_docker.download_file')
     @patch('utils.fn_install_docker.subprocess.run')
     def test_install_docker_macos(self, mock_run, mock_download_file):
@@ -101,13 +99,37 @@ class TestFnInstallDocker(unittest.TestCase):
             call(['open', '/Applications/Docker.app'], check=True)
         ])
 
+    @patch('utils.fn_install_docker.subprocess.run')
+    @patch('utils.fn_install_docker.download_file')
+    @patch('os.getenv', return_value='testuser')
+    def test_install_docker_wsl(self, mock_getenv, mock_download_file, mock_run):
+        """Test WSL Docker installation."""
+        files_path = "/tmp"
+        
+        # Test successful installation
+        mock_run.side_effect = [
+            subprocess.CompletedProcess(args=['cmd.exe', '/c', 'where', 'docker'], returncode=0),
+            subprocess.CompletedProcess(args=['sudo', 'sh', '/tmp/get-docker.sh'], returncode=0),
+            subprocess.CompletedProcess(args=['sudo', 'usermod', '-aG', 'docker', 'testuser'], returncode=0)
+        ]
+        
+        install_docker_wsl(files_path)
+        
+        mock_download_file.assert_called_once_with("https://get.docker.com", "/tmp/get-docker.sh")
+        mock_run.assert_has_calls([
+            call(["cmd.exe", "/c", "where", "docker"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True),
+            call(["sudo", "sh", "/tmp/get-docker.sh"], check=True),
+            call(["sudo", "usermod", "-aG", "docker", "testuser"], check=True)
+        ])
+
     @patch('utils.fn_install_docker.detect_os')
     @patch('utils.fn_install_docker.detect_architecture')
     @patch('utils.fn_install_docker.install_docker_linux')
     @patch('utils.fn_install_docker.install_docker_windows')
     @patch('utils.fn_install_docker.install_docker_macos')
-    def test_main(self, mock_install_macos, mock_install_windows, mock_install_linux, mock_detect_architecture, mock_detect_os):
-        mock_detect_os.return_value = {"os_type": "linux"}
+    @patch('utils.fn_install_docker.install_docker_wsl')
+    def test_main(self, mock_install_wsl, mock_install_macos, mock_install_windows, mock_install_linux, mock_detect_architecture, mock_detect_os):
+        mock_detect_os.return_value = {"os_type": "linux", "is_wsl": False}
         mock_detect_architecture.return_value = {"dkarch": "amd64"}
 
         app_config = {}
@@ -119,18 +141,24 @@ class TestFnInstallDocker(unittest.TestCase):
 
         mock_install_linux.assert_called_once_with("/fake/path")
 
-        mock_detect_os.return_value = {"os_type": "windows"}
+        mock_detect_os.return_value = {"os_type": "windows", "is_wsl": False}
         with patch('builtins.input', return_value='y'):
             main(app_config, m4b_config, user_config)
 
         mock_install_windows.assert_called_once_with("/fake/path")
 
-        mock_detect_os.return_value = {"os_type": "darwin"}
+        mock_detect_os.return_value = {"os_type": "darwin", "is_wsl": False}
         mock_detect_architecture.return_value = {"dkarch": "amd64"}
         with patch('builtins.input', return_value='y'):
             main(app_config, m4b_config, user_config)
 
         mock_install_macos.assert_called_once_with("/fake/path", intel_cpu=True)
+
+        mock_detect_os.return_value = {"os_type": "linux", "is_wsl": True}
+        with patch('builtins.input', return_value='y'):
+            main(app_config, m4b_config, user_config)
+
+        mock_install_wsl.assert_called_once_with("/fake/path")
 
 if __name__ == '__main__':
     unittest.main()

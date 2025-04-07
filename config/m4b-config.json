@@ -10,13 +10,16 @@
       "x86_64": "amd64",
       "amd64": "amd64",
       "aarch64": "arm64",
-      "arm64": "arm64"
+      "arm64": "arm64",
+      "armv7l": "arm",
+      "armv6l": "arm"
     },
     "os_map": {
       "win32nt": "Windows",
       "windows_nt": "Windows",
       "windows": "Windows",
       "linux": "Linux",
+      "wsl": "WSL",
       "darwin": "MacOS",
       "macos": "MacOS",
       "macosx": "MacOS",

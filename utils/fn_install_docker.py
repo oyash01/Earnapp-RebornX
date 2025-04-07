@@ -167,6 +167,55 @@ def install_docker_macos(files_path: str, intel_cpu: bool):
         raise
 
 
+def install_docker_wsl(files_path: str):
+    """Install Docker on a WSL system."""
+    try:
+        logging.info("Starting Docker for WSL auto installation script")
+
+        # First, check if Docker Desktop is installed on Windows
+        try:
+            subprocess.run(["cmd.exe", "/c", "where", "docker"], 
+                         stdout=subprocess.PIPE, 
+                         stderr=subprocess.PIPE, 
+                         check=True)
+            print("Docker Desktop is already installed on Windows")
+            logging.info("Docker Desktop is already installed on Windows")
+        except subprocess.CalledProcessError:
+            print("Docker Desktop is not installed on Windows. Please install Docker Desktop first.")
+            logging.warning("Docker Desktop is not installed on Windows")
+            return
+
+        # Install Docker in WSL
+        installer_url = "https://get.docker.com"
+        installer_path = os.path.join(files_path, "get-docker.sh")
+
+        # Download Docker Installer
+        download_file(installer_url, installer_path)
+
+        # Install Docker
+        subprocess.run(["sudo", "sh", installer_path], check=True)
+        
+        # Add current user to docker group
+        subprocess.run(["sudo", "usermod", "-aG", "docker", os.getenv("USER")], check=True)
+        
+        print("Docker should now be successfully installed in WSL")
+        logging.info("Docker installed successfully in WSL")
+        time.sleep(sleep_time)
+
+        # Clean-up
+        os.remove(installer_path)
+        
+        print("\nPlease restart your WSL terminal for the changes to take effect.")
+        print("You can do this by running 'wsl --shutdown' in Windows PowerShell and reopening your terminal.")
+        
+    except subprocess.CalledProcessError as e:
+        logging.error(f"An error occurred during Docker installation in WSL: {str(e)}")
+        raise
+    except Exception as e:
+        logging.error(f"An unexpected error occurred during Docker installation in WSL: {str(e)}")
+        raise
+
+
 def main(app_config_path: str, m4b_config_path: str, user_config_path: str) -> None:
     """
     Main function to install Docker based on the operating system.
@@ -184,6 +233,7 @@ def main(app_config_path: str, m4b_config_path: str, user_config_path: str) -> N
     arch_info = detect_architecture(m4b_config)
 
     os_type = os_info["os_type"].lower()
+    is_wsl = os_info.get("is_wsl", False)
     dkarch = arch_info["dkarch"].lower()
     files_path = m4b_config.get('files_path', os.path.join(
         os.path.dirname(os.path.abspath(__file__)), 'tmp'))
@@ -198,7 +248,9 @@ def main(app_config_path: str, m4b_config_path: str, user_config_path: str) -> N
         print(msg)
         return
 
-    if os_type == "linux":
+    if is_wsl:
+        install_docker_wsl(files_path)
+    elif os_type == "linux":
         install_docker_linux(files_path)
     elif os_type == "windows":
         install_docker_windows(files_path)

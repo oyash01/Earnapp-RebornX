@@ -20,6 +20,20 @@ if parent_dir not in sys.path:
 # Import the module from the parent directory
 
 
+def is_wsl() -> bool:
+    """
+    Detect if the current environment is running in Windows Subsystem for Linux (WSL).
+    
+    Returns:
+        bool: True if running in WSL, False otherwise.
+    """
+    try:
+        with open('/proc/version', 'r') as f:
+            return 'microsoft' in f.read().lower()
+    except:
+        return False
+
+
 def detect_os(m4b_config_path_or_dict: Any) -> Dict[str, str]:
     """
     Detect the operating system based on the system's platform and map it according to the m4b configuration.
@@ -28,7 +42,7 @@ def detect_os(m4b_config_path_or_dict: Any) -> Dict[str, str]:
         m4b_config_path_or_dict (Any): The path to the m4b config file or the config dictionary.
 
     Returns:
-        Dict[str, str]: A dictionary containing the detected OS type.
+        Dict[str, str]: A dictionary containing the detected OS type and whether it's running in WSL.
 
     Raises:
         Exception: If an error occurs during OS detection or if the OS is not recognized.
@@ -43,6 +57,12 @@ def detect_os(m4b_config_path_or_dict: Any) -> Dict[str, str]:
         detected_os = platform.system().lower()
         logging.info(f"Detected OS: {detected_os}")
 
+        # Check if running in WSL
+        is_wsl_env = is_wsl()
+        if is_wsl_env:
+            logging.info("Detected WSL environment")
+            detected_os = "wsl"
+
         # Map the detected OS using the os_map from the config
         mapped_os = os_map.get(detected_os, "unknown")
 
@@ -51,7 +71,7 @@ def detect_os(m4b_config_path_or_dict: Any) -> Dict[str, str]:
                 f"OS type '{detected_os}' is not recognized in the provided os_map.")
 
         logging.info(f"Mapped OS: {mapped_os}")
-        return {"os_type": mapped_os}
+        return {"os_type": mapped_os, "is_wsl": is_wsl_env}
 
     except KeyError as e:
         logging.error(f"KeyError in configuration: {str(e)}")
