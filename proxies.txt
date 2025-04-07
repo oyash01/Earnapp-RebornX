@@ -1,0 +1,20 @@
+# Add your proxies here, one per line in the format:
+# protocol://username:password@host:port
+# or
+# protocol://host:port
+# Example:
+# http://user:pass@proxy1.example.com:8080
+# socks5://proxy2.example.com:1080
+
+# Example proxies for EarnApp
+# Format: protocol://username:password@host:port
+# Replace with your actual proxies
+
+# Proxy 1
+http://user1:pass1@proxy1.example.com:8080
+
+# Proxy 2
+http://user2:pass2@proxy2.example.com:8080
+
+# Proxy 3
+http://user3:pass3@proxy3.example.com:8080 
