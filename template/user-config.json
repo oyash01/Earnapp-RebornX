@@ -1,0 +1,48 @@
+{
+  "user_config_version": 1.1,
+  "user": {
+    "Nickname": "yourNickname",
+    "email": "your@mail.com"
+  },
+  "device_info": {
+    "device_name": "yourDeviceName",
+    "os_type": "Linux",
+    "detected_architecture": "amd64",
+    "detected_docker_arch": "amd64"
+  },
+  "apps": {
+    "EARNAPP": {
+      "enabled": true,
+      "uuid": ""
+    }
+  },
+  "m4b_dashboard": {
+    "enabled": true,
+    "ports": 8081
+  },
+  "proxies": {
+    "enabled": false,
+    "url": "",
+    "url_example": "protocol://username:password@ip:port"
+  },
+  "notifications": {
+    "enabled": false,
+    "url": "",
+    "url_example": "yourApp:yourToken@yourWebHook"
+  },
+  "resource_limits": {
+    "app_cpu_limit_little": 0.8,
+    "app_cpu_limit_medium": 1,
+    "app_cpu_limit_big": 2,
+    "app_cpu_limit_huge": 4,
+    "ram_cap_mb_default": 6144,
+    "app_mem_reserv_little": "64m",
+    "app_mem_limit_little": "128m",
+    "app_mem_reserv_medium": "128m",
+    "app_mem_limit_medium": "256m",
+    "app_mem_reserv_big": "256m",
+    "app_mem_limit_big": "512m",
+    "app_mem_reserv_huge": "512m",
+    "app_mem_limit_huge": "1024m"
+  }
+}
