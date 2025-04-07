@@ -21,7 +21,26 @@ init(autoreset=True)
 
 class EarnAppManager:
     def __init__(self):
-        self.docker_client = docker.from_env()
+        try:
+            # Try to connect to Docker with a timeout
+            self.docker_client = docker.from_env(timeout=5)
+            # Test the connection
+            self.docker_client.ping()
+            logging.info("Successfully connected to Docker daemon")
+        except docker.errors.DockerException as e:
+            logging.error(f"Docker connection error: {str(e)}")
+            print(f"{Fore.RED}Error: Could not connect to Docker daemon.")
+            print(f"{Fore.YELLOW}Please make sure Docker is installed and running.")
+            print(f"{Fore.YELLOW}On Linux, you may need to run: sudo systemctl start docker")
+            print(f"{Fore.YELLOW}On Windows, make sure Docker Desktop is running")
+            print(f"{Fore.YELLOW}On macOS, make sure Docker Desktop is running")
+            print(f"{Fore.YELLOW}You can also try running the script with sudo if needed.")
+            sys.exit(1)
+        except Exception as e:
+            logging.error(f"Unexpected error: {str(e)}")
+            print(f"{Fore.RED}An unexpected error occurred. Check logs for details.")
+            sys.exit(1)
+            
         self.config_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config")
         self.instances_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "instances")
         self.setup_logging()
@@ -80,6 +99,22 @@ class EarnAppManager:
     def create_instance(self, instance_name: str, proxy_config: Dict[str, Any] = None) -> bool:
         """Create a new EarnApp instance with the given configuration"""
         try:
+            # Check if Docker is running
+            try:
+                self.docker_client.ping()
+            except docker.errors.DockerException as e:
+                logging.error(f"Docker connection error: {str(e)}")
+                print(f"{Fore.RED}Error: Could not connect to Docker daemon.")
+                print(f"{Fore.YELLOW}Please make sure Docker is installed and running.")
+                print(f"{Fore.YELLOW}On Linux, you may need to run: sudo systemctl start docker")
+                print(f"{Fore.YELLOW}On Windows, make sure Docker Desktop is running")
+                print(f"{Fore.YELLOW}On macOS, make sure Docker Desktop is running")
+                return False
+            except Exception as e:
+                logging.error(f"Error checking Docker status: {str(e)}")
+                print(f"{Fore.RED}Error checking Docker status: {str(e)}")
+                return False
+                
             instance_dir = os.path.join(self.instances_dir, instance_name)
             os.makedirs(instance_dir, exist_ok=True)
 
@@ -106,17 +141,49 @@ class EarnAppManager:
                 for key, value in env_content.items():
                     f.write(f"{key}={value}\n")
 
+            # Check if docker-compose.yml.template exists
+            template_path = os.path.join(self.config_dir, "docker-compose.yml.template")
+            if not os.path.exists(template_path):
+                logging.error(f"docker-compose.yml.template not found in {self.config_dir}")
+                print(f"{Fore.RED}Error: docker-compose.yml.template not found in config directory.")
+                print(f"{Fore.YELLOW}Please make sure the template file exists.")
+                return False
+
             # Copy docker-compose.yml template
-            shutil.copy(
-                os.path.join(self.config_dir, "docker-compose.yml.template"),
-                os.path.join(instance_dir, "docker-compose.yml")
-            )
+            try:
+                shutil.copy(
+                    template_path,
+                    os.path.join(instance_dir, "docker-compose.yml")
+                )
+            except Exception as e:
+                logging.error(f"Error copying docker-compose.yml template: {str(e)}")
+                print(f"{Fore.RED}Error copying docker-compose.yml template: {str(e)}")
+                return False
+                
+            # Copy nginx.conf template
+            nginx_template_path = os.path.join(self.config_dir, "nginx.conf.template")
+            if os.path.exists(nginx_template_path):
+                try:
+                    shutil.copy(
+                        nginx_template_path,
+                        os.path.join(instance_dir, "nginx.conf")
+                    )
+                except Exception as e:
+                    logging.error(f"Error copying nginx.conf template: {str(e)}")
+                    print(f"{Fore.YELLOW}Warning: Error copying nginx.conf template: {str(e)}")
+            else:
+                logging.warning(f"nginx.conf.template not found in {self.config_dir}")
+                print(f"{Fore.YELLOW}Warning: nginx.conf.template not found in config directory.")
+                print(f"{Fore.YELLOW}Proxy service may not work correctly.")
 
             logging.info(f"Created instance {instance_name} with UUID {instance_uuid}")
+            print(f"{Fore.GREEN}Successfully created instance {instance_name} with UUID {instance_uuid}")
             return True
 
         except Exception as e:
             logging.error(f"Error creating instance {instance_name}: {e}")
+            print(f"{Fore.RED}An unexpected error occurred while creating instance {instance_name}.")
+            print(f"{Fore.YELLOW}Check logs for details.")
             return False
 
     def start_instance(self, instance_name: str) -> bool:
@@ -125,23 +192,52 @@ class EarnAppManager:
             instance_dir = os.path.join(self.instances_dir, instance_name)
             if not os.path.exists(instance_dir):
                 logging.error(f"Instance directory not found: {instance_dir}")
+                print(f"{Fore.RED}Error: Instance directory not found: {instance_name}")
                 return False
 
             # Check if Docker is running
             try:
                 self.docker_client.ping()
+            except docker.errors.DockerException as e:
+                logging.error(f"Docker connection error: {str(e)}")
+                print(f"{Fore.RED}Error: Could not connect to Docker daemon.")
+                print(f"{Fore.YELLOW}Please make sure Docker is installed and running.")
+                print(f"{Fore.YELLOW}On Linux, you may need to run: sudo systemctl start docker")
+                print(f"{Fore.YELLOW}On Windows, make sure Docker Desktop is running")
+                print(f"{Fore.YELLOW}On macOS, make sure Docker Desktop is running")
+                return False
             except Exception as e:
-                logging.error("Docker is not running. Please start Docker and try again.")
+                logging.error(f"Error checking Docker status: {str(e)}")
+                print(f"{Fore.RED}Error checking Docker status: {str(e)}")
+                return False
+
+            # Check if docker-compose.yml exists
+            docker_compose_path = os.path.join(instance_dir, "docker-compose.yml")
+            if not os.path.exists(docker_compose_path):
+                logging.error(f"docker-compose.yml not found in {instance_dir}")
+                print(f"{Fore.RED}Error: docker-compose.yml not found in instance directory.")
                 return False
 
             # Start the instance using docker-compose
-            os.chdir(instance_dir)
-            os.system("docker-compose up -d")
-            logging.info(f"Started instance {instance_name}")
-            return True
+            try:
+                os.chdir(instance_dir)
+                result = os.system("docker-compose up -d")
+                if result != 0:
+                    logging.error(f"Failed to start instance {instance_name} with exit code {result}")
+                    print(f"{Fore.RED}Failed to start instance {instance_name}. Check logs for details.")
+                    return False
+                logging.info(f"Started instance {instance_name}")
+                print(f"{Fore.GREEN}Successfully started instance {instance_name}")
+                return True
+            except Exception as e:
+                logging.error(f"Error running docker-compose: {str(e)}")
+                print(f"{Fore.RED}Error running docker-compose: {str(e)}")
+                return False
 
         except Exception as e:
             logging.error(f"Error starting instance {instance_name}: {e}")
+            print(f"{Fore.RED}An unexpected error occurred while starting instance {instance_name}.")
+            print(f"{Fore.YELLOW}Check logs for details.")
             return False
 
     def stop_instance(self, instance_name: str) -> bool:
