@@ -1,173 +1,95 @@
-# EarnApp RebornX 🚀
+# EarnApp RebornX
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/downloads/)
-[![Docker](https://img.shields.io/badge/docker-required-blue)](https://www.docker.com/)
+A powerful multi-proxy setup for EarnApp with automatic UUID generation and resource management.
 
-EarnApp RebornX is a powerful tool for running multiple EarnApp instances with different proxies, allowing you to maximize your earnings by utilizing multiple IP addresses simultaneously.
+## Features
 
-## 🌟 Features
+- Multi-proxy support with automatic instance creation
+- 2GB RAM configuration for optimal performance
+- Automatic UUID generation
+- Docker container management
+- Colorful CLI interface
+- Error handling and logging
+- Configuration management
 
-- **Web Dashboard**: Monitor all your EarnApp instances from a single dashboard
-- **Automatic Updates**: Keep your instances up-to-date with the latest versions
-- **Multi-Proxy Support**: Run multiple instances with different proxies
-- **Enhanced Security**: Isolated instances with secure proxy configurations
-- **Detailed Analytics**: Track performance and earnings for each instance
-- **Easy Setup**: Simple configuration process with guided setup
-
-## 📋 Table of Contents
-
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-  - [Windows](#windows)
-  - [Linux](#linux)
-  - [macOS](#macos)
-- [Configuration](#configuration)
-- [Multi-Proxy Setup](#multi-proxy-setup)
-- [Monitoring and Maintenance](#monitoring-and-maintenance)
-- [Troubleshooting](#troubleshooting)
-- [FAQ](#faq)
-- [Contributing](#contributing)
-- [License](#license)
-- [Acknowledgments](#acknowledgments)
-
-## 🔧 Prerequisites
+## Prerequisites
 
 - Python 3.8 or higher
 - Docker and Docker Compose
-- Internet connection
-- Proxies (HTTP/SOCKS5)
+- 64-bit operating system
+- Virtualization enabled (for Docker)
 
-## 💻 Installation
+## Installation
 
-### Windows
+1. Clone the repository:
+```bash
+git clone https://github.com/oyash01/Earnapp-RebornX.git
+cd Earnapp-RebornX
+```
 
-1. Install Python from [python.org](https://www.python.org/downloads/)
-2. Install Docker Desktop from [docker.com](https://www.docker.com/products/docker-desktop)
-3. Clone the repository:
-   ```bash
-   git clone https://github.com/oyash01/Earnapp-RebornX.git
-   cd Earnapp-RebornX
-   ```
-4. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-### Linux
+3. Create a `proxies.txt` file with your proxy configurations (one per line):
+```
+http://proxy1:port
+http://proxy2:port
+```
 
-1. Install Python and Docker:
-   ```bash
-   sudo apt update
-   sudo apt install -y python3 python3-pip docker.io docker-compose
-   ```
-2. Add your user to the Docker group:
-   ```bash
-   sudo usermod -aG docker $USER
-   ```
-3. Clone the repository:
-   ```bash
-   git clone https://github.com/oyash01/Earnapp-RebornX.git
-   cd Earnapp-RebornX
-   ```
-4. Install dependencies:
-   ```bash
-   pip3 install -r requirements.txt
-   ```
+## Usage
 
-### macOS
+1. Run the script:
+```bash
+python main.py
+```
 
-1. Install Python from [python.org](https://www.python.org/downloads/)
-2. Install Docker Desktop from [docker.com](https://www.docker.com/products/docker-desktop)
-3. Clone the repository:
-   ```bash
-   git clone https://github.com/oyash01/Earnapp-RebornX.git
-   cd Earnapp-RebornX
-   ```
-4. Install dependencies:
-   ```bash
-   pip3 install -r requirements.txt
-   ```
+2. Choose from the following options:
+   - Show supported apps' links
+   - Install Docker
+   - Setup EarnApp instances
+   - Start all instances
+   - Stop all instances
+   - Reset configuration
+   - Exit
 
-## ⚙️ Configuration
+## Configuration
 
-1. Create a `proxies.txt` file in the root directory with your proxies:
-   ```
-   # Format: protocol://username:password@host:port
-   http://user1:pass1@proxy1.example.com:8080
-   http://user2:pass2@proxy2.example.com:8080
-   ```
+The script automatically configures:
+- 2GB RAM limit for each instance
+- 0.5 CPU cores per instance
+- Automatic UUID generation
+- Dashboard ports (starting from 8081)
 
-2. Run the setup script:
-   ```bash
-   python main.py
-   ```
-   Select option 1 to set up EarnApp instances.
+## Troubleshooting
 
-3. Configure your EarnApp UUIDs:
-   - Navigate to the instances directory
-   - For each instance, edit the `.env` file
-   - Add your EarnApp UUID
+1. If Docker is not running:
+   - Start Docker service
+   - Ensure you have proper permissions
 
-## 🔄 Multi-Proxy Setup
-
-1. Add your proxies to `proxies.txt`
-2. Run the setup script to create instances
-3. Configure UUIDs for each instance
-4. Start all instances
-
-## 📊 Monitoring and Maintenance
-
-- Access the web dashboard at `http://localhost:8081`
-- Monitor instance logs:
-  ```bash
-  docker logs earnapp_instance_1
-  ```
-- Check resource usage:
-  ```bash
-  docker stats
-  ```
-
-## 🔍 Troubleshooting
-
-### Common Issues
-
-1. **Docker not running**
-   - Start Docker Desktop
-   - Check Docker service status
-
-2. **Proxy connection issues**
-   - Verify proxy format in `proxies.txt`
-   - Check proxy credentials
-   - Test proxy connectivity
-
-3. **Instance not starting**
+2. If instances fail to start:
    - Check Docker logs
-   - Verify UUID configuration
+   - Verify proxy configurations
    - Ensure sufficient system resources
 
-## ❓ FAQ
+3. If configuration reset fails:
+   - Check file permissions
+   - Verify backup files exist
 
-**Q: How many instances can I run?**  
-A: The number of instances depends on your system resources and the number of proxies you have.
+## Recent Updates
 
-**Q: Can I use free proxies?**  
-A: While possible, we recommend using paid proxies for better reliability and earnings.
+- Added automatic UUID generation
+- Improved error handling and user feedback
+- Enhanced menu system with colored output
+- Updated Docker Compose configuration for better resource management
+- Added support for 2GB RAM configuration
+- Improved instance management with better directory structure
 
-**Q: How often should I update my proxies?**  
-A: Update your proxies when you notice decreased earnings or connection issues.
-
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Original Money4Band project
-- EarnApp team
-- Docker community
-- All contributors and users
+This project is licensed under the MIT License - see the LICENSE file for details.

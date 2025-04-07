@@ -9,9 +9,13 @@ services:
       - EARNAPP_UUID=${EARNAPP_UUID}
     network_mode: service:proxy
     restart: always
-    cpus: ${APP_CPU_LIMIT_LITTLE}
-    mem_reservation: ${APP_MEM_RESERV_LITTLE}
-    mem_limit: ${APP_MEM_LIMIT_LITTLE}
+    deploy:
+      resources:
+        limits:
+          cpus: ${APP_CPU_LIMIT_LITTLE:-0.5}
+          memory: ${APP_MEM_LIMIT_LITTLE:-2g}
+        reservations:
+          memory: ${APP_MEM_RESERV_LITTLE:-1g}
 
   proxy:
     container_name: ${DEVICE_NAME}_tun2socks
@@ -34,9 +38,13 @@ services:
     volumes:
       - /dev/net/tun:/dev/net/tun
     restart: always
-    cpus: ${APP_CPU_LIMIT_BIG}
-    mem_reservation: ${APP_MEM_RESERV_BIG}
-    mem_limit: ${APP_MEM_LIMIT_BIG}
+    deploy:
+      resources:
+        limits:
+          cpus: ${APP_CPU_LIMIT_BIG:-0.5}
+          memory: ${APP_MEM_LIMIT_BIG:-2g}
+        reservations:
+          memory: ${APP_MEM_RESERV_BIG:-1g}
 
   watchtower:
     container_name: ${DEVICE_NAME}_watchtower
@@ -51,9 +59,13 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
-    cpus: ${APP_CPU_LIMIT_MEDIUM}
-    mem_reservation: ${APP_MEM_RESERV_MEDIUM}
-    mem_limit: ${APP_MEM_LIMIT_MEDIUM}
+    deploy:
+      resources:
+        limits:
+          cpus: ${APP_CPU_LIMIT_MEDIUM:-0.5}
+          memory: ${APP_MEM_LIMIT_MEDIUM:-2g}
+        reservations:
+          memory: ${APP_MEM_RESERV_MEDIUM:-1g}
 
   dashboard:
     container_name: ${DEVICE_NAME}_m4b_dashboard
@@ -64,8 +76,12 @@ services:
       - ./.resources/.assets:/usr/share/nginx/html/.images:ro
       - ./config/app-config.json:/usr/share/nginx/html/.config/app-config.json:ro
     ports:
-      - "${M4B_DASHBOARD_PORT}:80"
+      - "${M4B_DASHBOARD_PORT:-8081}:80"
     restart: always
-    cpus: ${APP_CPU_LIMIT_LITTLE}
-    mem_reservation: ${APP_MEM_RESERV_LITTLE}
-    mem_limit: ${APP_MEM_LIMIT_LITTLE} 
+    deploy:
+      resources:
+        limits:
+          cpus: ${APP_CPU_LIMIT_LITTLE:-0.5}
+          memory: ${APP_MEM_LIMIT_LITTLE:-2g}
+        reservations:
+          memory: ${APP_MEM_RESERV_LITTLE:-1g} 
