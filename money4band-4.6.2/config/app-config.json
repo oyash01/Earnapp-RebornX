@@ -1,0 +1,41 @@
+{
+  "app_config_version": 1.1,
+  "apps": [
+    {
+      "name": "EARNAPP",
+      "dashboard": "https://earnapp.com/dashboard",
+      "link": "https://earnapp.com/i/3zulx7k",
+      "compose_config": {
+        "container_name": "${DEVICE_NAME}_earnapp",
+        "hostname": "${DEVICE_NAME}_earnapp",
+        "image": "fazalfarhan01/earnapp:lite",
+        "environment": ["EARNAPP_UUID=$EARNAPP_UUID", "EARNAPP_TERM=yes"],
+        "volumes": [".data/.earnapp:/etc/earnapp"],
+        "restart": "always",
+        "cpus": "${APP_CPU_LIMIT_MEDIUM}",
+        "mem_reservation": "${APP_MEM_RESERV_MEDIUM}",
+        "mem_limit": "${APP_MEM_LIMIT_MEDIUM}",
+        "logging": {
+          "driver": "json-file",
+          "options": {
+            "max-size": "10m",
+            "max-file": "3"
+          }
+        }
+      },
+      "compose_config_proxy": {
+        "network_mode": "service:proxy",
+        "hostname": null
+      },
+      "flags": {
+        "uuid": {
+          "length": 32,
+          "claimURLBase": "To claim your node, after starting it, go to the app's dashboard and then visit the following link: https://earnapp.com/r/sdk-node-",
+          "prefix": "sdk-node-"
+        }
+      }
+    }
+  ],
+  "extra-apps": [],
+  "removed-apps": []
+}

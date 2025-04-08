@@ -1,0 +1,34 @@
+{
+    "user": {
+        "username": "",
+        "email": "",
+        "preferences": {
+            "theme": "dark",
+            "language": "en",
+            "notifications": true
+        }
+    },
+    "instances": {
+        "default": {
+            "name": "default",
+            "enabled": true,
+            "proxy": {
+                "enabled": false,
+                "host": "",
+                "port": "",
+                "username": "",
+                "password": ""
+            }
+        }
+    },
+    "security": {
+        "api_key": "",
+        "encryption_enabled": true,
+        "backup_enabled": true
+    },
+    "monitoring": {
+        "enabled": true,
+        "interval": 300,
+        "alert_threshold": 90
+    }
+} 

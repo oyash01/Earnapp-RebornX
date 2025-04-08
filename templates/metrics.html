@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4">Performance Metrics</h1>
+    
+    <!-- Time Range Selector -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary" onclick="setTimeRange('1h')">1 Hour</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="setTimeRange('6h')">6 Hours</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="setTimeRange('24h')">24 Hours</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="setTimeRange('7d')">7 Days</button>
+                    </div>
+                    <div class="float-end">
+                        <button class="btn btn-success" onclick="exportMetrics()">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">CPU Usage</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="cpu-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Memory Usage</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="memory-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Network Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Network Traffic</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="network-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Disk I/O</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="disk-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Container Metrics -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Container Performance</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Container</th>
+                                    <th>CPU Usage</th>
+                                    <th>Memory Usage</th>
+                                    <th>Network In</th>
+                                    <th>Network Out</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="container-metrics">
+                                <!-- Container metrics will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Initialize charts
+let cpuChart = new Chart(document.getElementById('cpu-chart'), {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'CPU Usage',
+            data: [],
+            borderColor: '#3498db',
+            fill: false
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    }
+});
+
+let memoryChart = new Chart(document.getElementById('memory-chart'), {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'Memory Usage',
+            data: [],
+            borderColor: '#2ecc71',
+            fill: false
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    }
+});
+
+let networkChart = new Chart(document.getElementById('network-chart'), {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'Bytes In',
+            data: [],
+            borderColor: '#e74c3c',
+            fill: false
+        }, {
+            label: 'Bytes Out',
+            data: [],
+            borderColor: '#f1c40f',
+            fill: false
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+
+let diskChart = new Chart(document.getElementById('disk-chart'), {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'Read',
+            data: [],
+            borderColor: '#9b59b6',
+            fill: false
+        }, {
+            label: 'Write',
+            data: [],
+            borderColor: '#1abc9c',
+            fill: false
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+
+// Time range selection
+let currentTimeRange = '1h';
+
+function setTimeRange(range) {
+    currentTimeRange = range;
+    updateMetrics();
+}
+
+// Update metrics
+function updateMetrics() {
+    fetch(`/api/metrics?range=${currentTimeRange}`)
+        .then(response => response.json())
+        .then(data => {
+            updateCharts(data);
+            updateContainerMetrics(data.containers);
+        });
+}
+
+// Update charts with new data
+function updateCharts(data) {
+    const timestamps = data.timestamps;
+    
+    // Update CPU chart
+    cpuChart.data.labels = timestamps;
+    cpuChart.data.datasets[0].data = data.cpu_usage;
+    cpuChart.update();
+    
+    // Update Memory chart
+    memoryChart.data.labels = timestamps;
+    memoryChart.data.datasets[0].data = data.memory_usage;
+    memoryChart.update();
+    
+    // Update Network chart
+    networkChart.data.labels = timestamps;
+    networkChart.data.datasets[0].data = data.network_in;
+    networkChart.data.datasets[1].data = data.network_out;
+    networkChart.update();
+    
+    // Update Disk chart
+    diskChart.data.labels = timestamps;
+    diskChart.data.datasets[0].data = data.disk_read;
+    diskChart.data.datasets[1].data = data.disk_write;
+    diskChart.update();
+}
+
+// Update container metrics table
+function updateContainerMetrics(containers) {
+    const containerMetrics = document.getElementById('container-metrics');
+    containerMetrics.innerHTML = '';
+    
+    for (const [name, metrics] of Object.entries(containers)) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${name}</td>
+            <td>${metrics.cpu_usage.toFixed(1)}%</td>
+            <td>${metrics.memory_usage.toFixed(1)}%</td>
+            <td>${formatBytes(metrics.network_in)}</td>
+            <td>${formatBytes(metrics.network_out)}</td>
+            <td>
+                <span class="status-indicator status-${metrics.status.toLowerCase()}"></span>
+                ${metrics.status}
+            </td>
+        `;
+        containerMetrics.appendChild(row);
+    }
+}
+
+// Format bytes to human-readable format
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Export metrics
+function exportMetrics() {
+    fetch(`/api/metrics/export?range=${currentTimeRange}`)
+        .then(response => response.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `metrics_${currentTimeRange}_${new Date().toISOString()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+        });
+}
+
+// Update metrics every 5 seconds
+setInterval(updateMetrics, 5000);
+
+// Initial update
+updateMetrics();
+</script>
+{% endblock %} 

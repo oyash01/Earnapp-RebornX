@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4">Dashboard Overview</h1>
+    
+    <!-- System Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body metric-card">
+                    <div class="metric-value" id="cpu-usage">0%</div>
+                    <div class="metric-label">CPU Usage</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body metric-card">
+                    <div class="metric-value" id="memory-usage">0%</div>
+                    <div class="metric-label">Memory Usage</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body metric-card">
+                    <div class="metric-value" id="disk-usage">0%</div>
+                    <div class="metric-label">Disk Usage</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body metric-card">
+                    <div class="metric-value" id="network-usage">0 MB/s</div>
+                    <div class="metric-label">Network Usage</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Container Status -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Container Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Container</th>
+                                    <th>Status</th>
+                                    <th>CPU</th>
+                                    <th>Memory</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="container-list">
+                                <!-- Container list will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Proxy Performance</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Proxy</th>
+                                    <th>Success Rate</th>
+                                    <th>Response Time</th>
+                                    <th>Errors</th>
+                                </tr>
+                            </thead>
+                            <tbody id="proxy-list">
+                                <!-- Proxy list will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Resource Usage History</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="resource-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Network Traffic</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="network-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Initialize charts
+let resourceChart = new Chart(document.getElementById('resource-chart'), {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'CPU Usage',
+            data: [],
+            borderColor: '#3498db',
+            fill: false
+        }, {
+            label: 'Memory Usage',
+            data: [],
+            borderColor: '#2ecc71',
+            fill: false
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    }
+});
+
+let networkChart = new Chart(document.getElementById('network-chart'), {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'Bytes Sent',
+            data: [],
+            borderColor: '#e74c3c',
+            fill: false
+        }, {
+            label: 'Bytes Received',
+            data: [],
+            borderColor: '#f1c40f',
+            fill: false
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+
+// Update system metrics
+function updateSystemMetrics() {
+    fetch('/api/system')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('cpu-usage').textContent = `${data.cpu_percent.toFixed(1)}%`;
+            document.getElementById('memory-usage').textContent = `${data.memory_percent.toFixed(1)}%`;
+            document.getElementById('disk-usage').textContent = `${data.disk_usage.toFixed(1)}%`;
+            
+            const networkSpeed = (data.network.bytes_sent + data.network.bytes_recv) / 1024 / 1024;
+            document.getElementById('network-usage').textContent = `${networkSpeed.toFixed(2)} MB/s`;
+            
+            // Update charts
+            const timestamp = new Date().toLocaleTimeString();
+            
+            resourceChart.data.labels.push(timestamp);
+            resourceChart.data.datasets[0].data.push(data.cpu_percent);
+            resourceChart.data.datasets[1].data.push(data.memory_percent);
+            
+            networkChart.data.labels.push(timestamp);
+            networkChart.data.datasets[0].data.push(data.network.bytes_sent / 1024 / 1024);
+            networkChart.data.datasets[1].data.push(data.network.bytes_recv / 1024 / 1024);
+            
+            // Keep last 10 data points
+            if (resourceChart.data.labels.length > 10) {
+                resourceChart.data.labels.shift();
+                resourceChart.data.datasets.forEach(dataset => dataset.data.shift());
+                networkChart.data.labels.shift();
+                networkChart.data.datasets.forEach(dataset => dataset.data.shift());
+            }
+            
+            resourceChart.update();
+            networkChart.update();
+        });
+}
+
+// Update container list
+function updateContainerList() {
+    fetch('/api/containers')
+        .then(response => response.json())
+        .then(containers => {
+            const containerList = document.getElementById('container-list');
+            containerList.innerHTML = '';
+            
+            containers.forEach(container => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${container.name}</td>
+                    <td>
+                        <span class="status-indicator status-${container.status.toLowerCase()}"></span>
+                        ${container.status}
+                    </td>
+                    <td>${container.cpu_percent || 0}%</td>
+                    <td>${container.memory_percent || 0}%</td>
+                    <td>
+                        <button class="btn-action btn-start" onclick="containerAction('${container.name}', 'start')">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="btn-action btn-stop" onclick="containerAction('${container.name}', 'stop')">
+                            <i class="fas fa-stop"></i>
+                        </button>
+                        <button class="btn-action btn-restart" onclick="containerAction('${container.name}', 'restart')">
+                            <i class="fas fa-sync"></i>
+                        </button>
+                    </td>
+                `;
+                containerList.appendChild(row);
+            });
+        });
+}
+
+// Update proxy list
+function updateProxyList() {
+    fetch('/api/proxies')
+        .then(response => response.json())
+        .then(proxies => {
+            const proxyList = document.getElementById('proxy-list');
+            proxyList.innerHTML = '';
+            
+            proxies.forEach(proxy => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${proxy.proxy}</td>
+                    <td>${proxy.success_rate.toFixed(1)}%</td>
+                    <td>${proxy.response_time.toFixed(2)}ms</td>
+                    <td>${proxy.errors}</td>
+                `;
+                proxyList.appendChild(row);
+            });
+        });
+}
+
+// Container actions
+function containerAction(containerId, action) {
+    fetch(`/api/containers/${containerId}/action`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(`Error: ${data.error}`);
+        } else {
+            updateContainerList();
+        }
+    });
+}
+
+// Update data every 5 seconds
+setInterval(() => {
+    updateSystemMetrics();
+    updateContainerList();
+    updateProxyList();
+}, 5000);
+
+// Initial update
+updateSystemMetrics();
+updateContainerList();
+updateProxyList();
+</script>
+{% endblock %} 

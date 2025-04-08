@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4">Settings</h1>
+    
+    <div class="row">
+        <!-- General Settings -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">General Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form id="general-settings-form">
+                        <div class="mb-3">
+                            <label for="dashboard-port" class="form-label">Dashboard Port</label>
+                            <input type="number" class="form-control" id="dashboard-port" value="8081">
+                        </div>
+                        <div class="mb-3">
+                            <label for="check-interval" class="form-label">Health Check Interval (seconds)</label>
+                            <input type="number" class="form-control" id="check-interval" value="60">
+                        </div>
+                        <div class="mb-3">
+                            <label for="log-retention" class="form-label">Log Retention (days)</label>
+                            <input type="number" class="form-control" id="log-retention" value="7">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save General Settings</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Resource Settings -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Resource Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form id="resource-settings-form">
+                        <div class="mb-3">
+                            <label for="cpu-limit" class="form-label">CPU Limit (cores)</label>
+                            <input type="number" class="form-control" id="cpu-limit" value="1" step="0.1">
+                        </div>
+                        <div class="mb-3">
+                            <label for="memory-limit" class="form-label">Memory Limit (MB)</label>
+                            <input type="number" class="form-control" id="memory-limit" value="1024">
+                        </div>
+                        <div class="mb-3">
+                            <label for="memory-reservation" class="form-label">Memory Reservation (MB)</label>
+                            <input type="number" class="form-control" id="memory-reservation" value="512">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Resource Settings</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <!-- Proxy Settings -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Proxy Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form id="proxy-settings-form">
+                        <div class="mb-3">
+                            <label for="proxy-type" class="form-label">Proxy Type</label>
+                            <select class="form-select" id="proxy-type">
+                                <option value="http">HTTP</option>
+                                <option value="socks5">SOCKS5</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="proxy-timeout" class="form-label">Timeout (seconds)</label>
+                            <input type="number" class="form-control" id="proxy-timeout" value="30">
+                        </div>
+                        <div class="mb-3">
+                            <label for="retry-count" class="form-label">Retry Count</label>
+                            <input type="number" class="form-control" id="retry-count" value="3">
+                        </div>
+                        <div class="mb-3">
+                            <label for="load-balance-strategy" class="form-label">Load Balance Strategy</label>
+                            <select class="form-select" id="load-balance-strategy">
+                                <option value="round-robin">Round Robin</option>
+                                <option value="least-used">Least Used</option>
+                                <option value="best-performance">Best Performance</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Proxy Settings</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Security Settings -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Security Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form id="security-settings-form">
+                        <div class="mb-3">
+                            <label for="rate-limit" class="form-label">Rate Limit (requests per minute)</label>
+                            <input type="number" class="form-control" id="rate-limit" value="100">
+                        </div>
+                        <div class="mb-3">
+                            <label for="ip-whitelist" class="form-label">IP Whitelist (one per line)</label>
+                            <textarea class="form-control" id="ip-whitelist" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enable-ssl">
+                                <label class="form-check-label" for="enable-ssl">
+                                    Enable SSL/TLS
+                                </label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Security Settings</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Backup and Restore -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Backup and Restore</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button class="btn btn-success" onclick="createBackup()">
+                                <i class="fas fa-save"></i> Create Backup
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="file" class="form-control" id="backup-file" accept=".zip">
+                                <button class="btn btn-primary" onclick="restoreBackup()">
+                                    <i class="fas fa-upload"></i> Restore Backup
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load current settings
+function loadSettings() {
+    fetch('/api/settings')
+        .then(response => response.json())
+        .then(settings => {
+            // General settings
+            document.getElementById('dashboard-port').value = settings.dashboard_port;
+            document.getElementById('check-interval').value = settings.health_check_interval;
+            document.getElementById('log-retention').value = settings.log_retention_days;
+            
+            // Resource settings
+            document.getElementById('cpu-limit').value = settings.cpu_limit;
+            document.getElementById('memory-limit').value = settings.memory_limit;
+            document.getElementById('memory-reservation').value = settings.memory_reservation;
+            
+            // Proxy settings
+            document.getElementById('proxy-type').value = settings.proxy_type;
+            document.getElementById('proxy-timeout').value = settings.proxy_timeout;
+            document.getElementById('retry-count').value = settings.retry_count;
+            document.getElementById('load-balance-strategy').value = settings.load_balance_strategy;
+            
+            // Security settings
+            document.getElementById('rate-limit').value = settings.rate_limit;
+            document.getElementById('ip-whitelist').value = settings.ip_whitelist.join('\n');
+            document.getElementById('enable-ssl').checked = settings.enable_ssl;
+        });
+}
+
+// Save general settings
+document.getElementById('general-settings-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const settings = {
+        dashboard_port: parseInt(document.getElementById('dashboard-port').value),
+        health_check_interval: parseInt(document.getElementById('check-interval').value),
+        log_retention_days: parseInt(document.getElementById('log-retention').value)
+    };
+    
+    saveSettings('general', settings);
+});
+
+// Save resource settings
+document.getElementById('resource-settings-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const settings = {
+        cpu_limit: parseFloat(document.getElementById('cpu-limit').value),
+        memory_limit: parseInt(document.getElementById('memory-limit').value),
+        memory_reservation: parseInt(document.getElementById('memory-reservation').value)
+    };
+    
+    saveSettings('resource', settings);
+});
+
+// Save proxy settings
+document.getElementById('proxy-settings-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const settings = {
+        proxy_type: document.getElementById('proxy-type').value,
+        proxy_timeout: parseInt(document.getElementById('proxy-timeout').value),
+        retry_count: parseInt(document.getElementById('retry-count').value),
+        load_balance_strategy: document.getElementById('load-balance-strategy').value
+    };
+    
+    saveSettings('proxy', settings);
+});
+
+// Save security settings
+document.getElementById('security-settings-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const settings = {
+        rate_limit: parseInt(document.getElementById('rate-limit').value),
+        ip_whitelist: document.getElementById('ip-whitelist').value.split('\n').filter(ip => ip.trim()),
+        enable_ssl: document.getElementById('enable-ssl').checked
+    };
+    
+    saveSettings('security', settings);
+});
+
+// Save settings to server
+function saveSettings(type, settings) {
+    fetch(`/api/settings/${type}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(settings)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(`Error: ${data.error}`);
+        } else {
+            alert('Settings saved successfully');
+        }
+    });
+}
+
+// Create backup
+function createBackup() {
+    fetch('/api/backup/create', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(`Error: ${data.error}`);
+        } else {
+            alert(`Backup created: ${data.backup_file}`);
+        }
+    });
+}
+
+// Restore backup
+function restoreBackup() {
+    const fileInput = document.getElementById('backup-file');
+    const file = fileInput.files[0];
+    if (!file) {
+        alert('Please select a backup file');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('backup_file', file);
+    
+    fetch('/api/backup/restore', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(`Error: ${data.error}`);
+        } else {
+            alert('Backup restored successfully');
+            loadSettings();
+        }
+    });
+}
+
+// Load settings on page load
+loadSettings();
+</script>
+{% endblock %} 

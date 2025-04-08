@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4">Proxy Management</h1>
+    
+    <!-- Proxy Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body metric-card">
+                    <div class="metric-value" id="total-proxies">0</div>
+                    <div class="metric-label">Total Proxies</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body metric-card">
+                    <div class="metric-value" id="active-proxies">0</div>
+                    <div class="metric-label">Active Proxies</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body metric-card">
+                    <div class="metric-value" id="avg-success-rate">0%</div>
+                    <div class="metric-label">Average Success Rate</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body metric-card">
+                    <div class="metric-value" id="total-errors">0</div>
+                    <div class="metric-label">Total Errors</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Proxy List -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Proxy List</h5>
+                    <div>
+                        <button class="btn btn-primary" onclick="showAddProxyModal()">
+                            <i class="fas fa-plus"></i> Add Proxy
+                        </button>
+                        <button class="btn btn-success" onclick="importProxies()">
+                            <i class="fas fa-file-import"></i> Import
+                        </button>
+                        <button class="btn btn-info" onclick="exportProxies()">
+                            <i class="fas fa-file-export"></i> Export
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Proxy</th>
+                                    <th>Type</th>
+                                    <th>Success Rate</th>
+                                    <th>Response Time</th>
+                                    <th>Last Used</th>
+                                    <th>Errors</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="proxy-list">
+                                <!-- Proxy list will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Performance Chart -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Proxy Performance History</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="performance-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Proxy Modal -->
+<div class="modal fade" id="addProxyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Proxy</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-proxy-form">
+                    <div class="mb-3">
+                        <label for="proxy-url" class="form-label">Proxy URL</label>
+                        <input type="text" class="form-control" id="proxy-url" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="proxy-type" class="form-label">Proxy Type</label>
+                        <select class="form-select" id="proxy-type">
+                            <option value="http">HTTP</option>
+                            <option value="socks5">SOCKS5</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="proxy-username" class="form-label">Username (optional)</label>
+                        <input type="text" class="form-control" id="proxy-username">
+                    </div>
+                    <div class="mb-3">
+                        <label for="proxy-password" class="form-label">Password (optional)</label>
+                        <input type="password" class="form-control" id="proxy-password">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addProxy()">Add Proxy</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Initialize performance chart
+let performanceChart = new Chart(document.getElementById('performance-chart'), {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'Success Rate',
+            data: [],
+            borderColor: '#2ecc71',
+            fill: false
+        }, {
+            label: 'Response Time (ms)',
+            data: [],
+            borderColor: '#e74c3c',
+            fill: false,
+            yAxisID: 'response-time'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100,
+                title: {
+                    display: true,
+                    text: 'Success Rate (%)'
+                }
+            },
+            'response-time': {
+                position: 'right',
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Response Time (ms)'
+                }
+            }
+        }
+    }
+});
+
+// Update proxy stats
+function updateProxyStats() {
+    fetch('/api/proxies/stats')
+        .then(response => response.json())
+        .then(stats => {
+            document.getElementById('total-proxies').textContent = stats.total;
+            document.getElementById('active-proxies').textContent = stats.active;
+            document.getElementById('avg-success-rate').textContent = `${stats.avg_success_rate.toFixed(1)}%`;
+            document.getElementById('total-errors').textContent = stats.total_errors;
+        });
+}
+
+// Update proxy list
+function updateProxyList() {
+    fetch('/api/proxies')
+        .then(response => response.json())
+        .then(proxies => {
+            const proxyList = document.getElementById('proxy-list');
+            proxyList.innerHTML = '';
+            
+            proxies.forEach(proxy => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${proxy.proxy}</td>
+                    <td>${proxy.type}</td>
+                    <td>${proxy.success_rate.toFixed(1)}%</td>
+                    <td>${proxy.response_time.toFixed(2)}ms</td>
+                    <td>${new Date(proxy.last_used).toLocaleString()}</td>
+                    <td>${proxy.errors}</td>
+                    <td>
+                        <span class="status-indicator status-${proxy.status.toLowerCase()}"></span>
+                        ${proxy.status}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="testProxy('${proxy.proxy}')">
+                            <i class="fas fa-vial"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="removeProxy('${proxy.proxy}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                proxyList.appendChild(row);
+            });
+        });
+}
+
+// Show add proxy modal
+function showAddProxyModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addProxyModal'));
+    modal.show();
+}
+
+// Add new proxy
+function addProxy() {
+    const form = document.getElementById('add-proxy-form');
+    const proxyData = {
+        url: document.getElementById('proxy-url').value,
+        type: document.getElementById('proxy-type').value,
+        username: document.getElementById('proxy-username').value,
+        password: document.getElementById('proxy-password').value
+    };
+    
+    fetch('/api/proxies', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(proxyData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(`Error: ${data.error}`);
+        } else {
+            bootstrap.Modal.getInstance(document.getElementById('addProxyModal')).hide();
+            form.reset();
+            updateProxyList();
+            updateProxyStats();
+        }
+    });
+}
+
+// Test proxy
+function testProxy(proxy) {
+    fetch(`/api/proxies/${proxy}/test`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(`Error: ${data.error}`);
+        } else {
+            alert(`Test results:\nSuccess: ${data.success}\nResponse Time: ${data.response_time}ms`);
+            updateProxyList();
+        }
+    });
+}
+
+// Remove proxy
+function removeProxy(proxy) {
+    if (confirm(`Are you sure you want to remove proxy ${proxy}?`)) {
+        fetch(`/api/proxies/${proxy}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(`Error: ${data.error}`);
+            } else {
+                updateProxyList();
+                updateProxyStats();
+            }
+        });
+    }
+}
+
+// Import proxies
+function importProxies() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.txt,.csv';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const proxies = e.target.result.split('\n').filter(line => line.trim());
+            fetch('/api/proxies/import', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ proxies })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(`Error: ${data.error}`);
+                } else {
+                    alert(`Imported ${data.imported} proxies`);
+                    updateProxyList();
+                    updateProxyStats();
+                }
+            });
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+// Export proxies
+function exportProxies() {
+    fetch('/api/proxies/export')
+        .then(response => response.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `proxies_${new Date().toISOString()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+        });
+}
+
+// Update performance chart
+function updatePerformanceChart() {
+    fetch('/api/proxies/performance')
+        .then(response => response.json())
+        .then(data => {
+            performanceChart.data.labels = data.timestamps;
+            performanceChart.data.datasets[0].data = data.success_rates;
+            performanceChart.data.datasets[1].data = data.response_times;
+            performanceChart.update();
+        });
+}
+
+// Update data every 5 seconds
+setInterval(() => {
+    updateProxyList();
+    updateProxyStats();
+    updatePerformanceChart();
+}, 5000);
+
+// Initial update
+updateProxyList();
+updateProxyStats();
+updatePerformanceChart();
+</script>
+{% endblock %} 

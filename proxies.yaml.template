@@ -1,0 +1,75 @@
+# EarnApp RebornX Proxy Configuration Template
+
+# Proxy Groups
+groups:
+  default:
+    enabled: true
+    type: http
+    timeout: 30
+    max_retries: 3
+    check_interval: 300
+    max_fails: 3
+    rotation_interval: 3600
+    proxies:
+      - name: proxy1
+        url: http://proxy1.example.com:8080
+        username: user1
+        password: pass1
+      - name: proxy2
+        url: http://proxy2.example.com:8080
+        username: user2
+        password: pass2
+
+  premium:
+    enabled: false
+    type: socks5
+    timeout: 60
+    max_retries: 5
+    check_interval: 600
+    max_fails: 5
+    rotation_interval: 7200
+    proxies:
+      - name: premium1
+        url: socks5://premium1.example.com:1080
+        username: premium_user1
+        password: premium_pass1
+
+# Proxy Testing
+testing:
+  enabled: true
+  interval: 300  # seconds
+  timeout: 10
+  test_url: https://api.ipify.org?format=json
+  success_codes: [200]
+  max_response_time: 5000  # milliseconds
+
+# Load Balancing
+load_balancing:
+  enabled: true
+  strategy: round_robin  # round_robin, least_used, fastest
+  health_check:
+    enabled: true
+    interval: 60
+    timeout: 5
+    success_threshold: 3
+    failure_threshold: 3
+
+# Proxy Rotation
+rotation:
+  enabled: true
+  interval: 3600  # seconds
+  strategy: sequential  # sequential, random
+  sticky_session: true
+  session_timeout: 300  # seconds
+
+# Error Handling
+error_handling:
+  retry_on_error: true
+  max_retries: 3
+  backoff_factor: 2
+  max_backoff: 300  # seconds
+  error_codes:
+    - 500
+    - 502
+    - 503
+    - 504 

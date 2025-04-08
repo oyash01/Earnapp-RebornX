@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  earnapp:
+    image: fr3nd/earnapp:latest
+    container_name: ${INSTANCE_NAME}_earnapp
+    restart: unless-stopped
+    environment:
+      - UUID=${INSTANCE_UUID}
+      - PROXY_ENABLED=${PROXY_ENABLED}
+      - PROXY_HOST=${PROXY_HOST}
+      - PROXY_PORT=${PROXY_PORT}
+      - PROXY_USERNAME=${PROXY_USERNAME}
+      - PROXY_PASSWORD=${PROXY_PASSWORD}
+    volumes:
+      - ./data:/data
+    networks:
+      - earnapp_network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4040/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  proxy:
+    image: nginx:alpine
+    container_name: ${INSTANCE_NAME}_proxy
+    restart: unless-stopped
+    ports:
+      - "${PROXY_PORT}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./logs/nginx:/var/log/nginx
+    networks:
+      - earnapp_network
+    depends_on:
+      - earnapp
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.2'
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: ${INSTANCE_NAME}_watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 30 --cleanup earnapp proxy
+    networks:
+      - earnapp_network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.1'
+
+  dashboard:
+    image: nginx:alpine-slim
+    container_name: ${INSTANCE_NAME}_dashboard
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./dashboard:/usr/share/nginx/html
+    networks:
+      - earnapp_network
+    depends_on:
+      - earnapp
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.2'
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  earnapp_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.7.0/27 
