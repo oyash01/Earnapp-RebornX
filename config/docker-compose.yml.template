@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   earnapp:
-    image: ghcr.io/earnapp/earnapp:latest
+    image: fr3nd/earnapp:latest
     container_name: ${INSTANCE_NAME}_earnapp
     restart: unless-stopped
     environment:
@@ -53,7 +53,7 @@ services:
       retries: 3
 
   watchtower:
-    image: containrrr/watchtower
+    image: containrrr/watchtower:latest
     container_name: ${INSTANCE_NAME}_watchtower
     restart: unless-stopped
     volumes:
@@ -68,20 +68,13 @@ services:
           cpus: '0.1'
 
   dashboard:
-    image: ghcr.io/earnapp/dashboard:latest
+    image: nginx:alpine-slim
     container_name: ${INSTANCE_NAME}_dashboard
     restart: unless-stopped
     ports:
-      - "8080:8080"
-    environment:
-      - EARNAPP_UUID=${INSTANCE_UUID}
-      - PROXY_ENABLED=${PROXY_ENABLED}
-      - PROXY_HOST=${PROXY_HOST}
-      - PROXY_PORT=${PROXY_PORT}
-      - PROXY_USERNAME=${PROXY_USERNAME}
-      - PROXY_PASSWORD=${PROXY_PASSWORD}
+      - "8080:80"
     volumes:
-      - ./data:/data
+      - ./dashboard:/usr/share/nginx/html
     networks:
       - earnapp_network
     depends_on:
@@ -92,7 +85,7 @@ services:
           memory: 512M
           cpus: '0.2'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "nginx", "-t"]
       interval: 30s
       timeout: 10s
       retries: 3

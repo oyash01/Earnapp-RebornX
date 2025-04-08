@@ -117,6 +117,19 @@ class EarnAppManager:
                 
             instance_dir = os.path.join(self.instances_dir, instance_name)
             os.makedirs(instance_dir, exist_ok=True)
+            
+            # Create data directory
+            data_dir = os.path.join(instance_dir, "data")
+            os.makedirs(data_dir, exist_ok=True)
+            
+            # Create dashboard directory
+            dashboard_dir = os.path.join(instance_dir, "dashboard")
+            os.makedirs(dashboard_dir, exist_ok=True)
+            
+            # Create logs directory
+            logs_dir = os.path.join(instance_dir, "logs")
+            os.makedirs(logs_dir, exist_ok=True)
+            os.makedirs(os.path.join(logs_dir, "nginx"), exist_ok=True)
 
             # Generate unique UUID for the instance
             instance_uuid = self.generate_uuid()
@@ -195,6 +208,66 @@ class EarnAppManager:
                         logging.warning(f"Error copying {template_file}: {str(e)}")
                         print(f"{Fore.YELLOW}Warning: Error copying {template_file}: {str(e)}")
 
+            # Create a simple dashboard index.html
+            dashboard_index = os.path.join(dashboard_dir, "index.html")
+            with open(dashboard_index, "w") as f:
+                f.write(f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EarnApp Dashboard - {instance_name}</title>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }}
+        .container {{
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }}
+        h1 {{
+            color: #333;
+        }}
+        .info {{
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #e9f7fe;
+            border-left: 4px solid #2196F3;
+        }}
+        .link {{
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }}
+        .link:hover {{
+            background-color: #45a049;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>EarnApp Dashboard - {instance_name}</h1>
+        <div class="info">
+            <p>Instance UUID: {instance_uuid}</p>
+            <p>Status: Running</p>
+            <p>Proxy: {"Enabled" if proxy_config else "Disabled"}</p>
+        </div>
+        <a href="https://earnapp.com/dashboard" class="link" target="_blank">Go to EarnApp Dashboard</a>
+    </div>
+</body>
+</html>""")
+
             logging.info(f"Created instance {instance_name} with UUID {instance_uuid}")
             print(f"{Fore.GREEN}Successfully created instance {instance_name} with UUID {instance_uuid}")
             return True
@@ -241,12 +314,19 @@ class EarnAppManager:
             try:
                 print(f"{Fore.YELLOW}Pulling required Docker images...")
                 os.chdir(instance_dir)
-                result = os.system("docker-compose pull")
-                if result != 0:
-                    logging.error(f"Failed to pull Docker images with exit code {result}")
-                    print(f"{Fore.RED}Failed to pull Docker images. Check logs for details.")
-                    return False
-                print(f"{Fore.GREEN}Successfully pulled Docker images")
+                
+                # Pull each image individually to better handle errors
+                images = ["fr3nd/earnapp:latest", "nginx:alpine", "containrrr/watchtower:latest", "nginx:alpine-slim"]
+                for image in images:
+                    print(f"{Fore.YELLOW}Pulling {image}...")
+                    result = os.system(f"docker pull {image}")
+                    if result != 0:
+                        logging.error(f"Failed to pull Docker image {image} with exit code {result}")
+                        print(f"{Fore.RED}Failed to pull Docker image {image}. Check logs for details.")
+                        return False
+                    print(f"{Fore.GREEN}Successfully pulled {image}")
+                
+                print(f"{Fore.GREEN}Successfully pulled all Docker images")
             except Exception as e:
                 logging.error(f"Error pulling Docker images: {str(e)}")
                 print(f"{Fore.RED}Error pulling Docker images: {str(e)}")
