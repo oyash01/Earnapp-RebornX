@@ -237,9 +237,24 @@ class EarnAppManager:
                 print(f"{Fore.RED}Error: docker-compose.yml not found in instance directory.")
                 return False
 
+            # Pull Docker images first
+            try:
+                print(f"{Fore.YELLOW}Pulling required Docker images...")
+                os.chdir(instance_dir)
+                result = os.system("docker-compose pull")
+                if result != 0:
+                    logging.error(f"Failed to pull Docker images with exit code {result}")
+                    print(f"{Fore.RED}Failed to pull Docker images. Check logs for details.")
+                    return False
+                print(f"{Fore.GREEN}Successfully pulled Docker images")
+            except Exception as e:
+                logging.error(f"Error pulling Docker images: {str(e)}")
+                print(f"{Fore.RED}Error pulling Docker images: {str(e)}")
+                return False
+
             # Start the instance using docker-compose
             try:
-                os.chdir(instance_dir)
+                print(f"{Fore.YELLOW}Starting instance {instance_name}...")
                 result = os.system("docker-compose up -d")
                 if result != 0:
                     logging.error(f"Failed to start instance {instance_name} with exit code {result}")

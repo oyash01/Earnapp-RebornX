@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   earnapp:
-    image: earnapp/earnapp:latest
-    container_name: earnapp_${INSTANCE_NAME}
+    image: ghcr.io/earnapp/earnapp:latest
+    container_name: ${INSTANCE_NAME}_earnapp
     restart: unless-stopped
     environment:
       - UUID=${INSTANCE_UUID}
@@ -13,25 +13,30 @@ services:
       - PROXY_USERNAME=${PROXY_USERNAME}
       - PROXY_PASSWORD=${PROXY_PASSWORD}
     volumes:
-      - ./data:/app/data
+      - ./data:/data
     networks:
       - earnapp_network
     deploy:
       resources:
         limits:
-          cpus: '0.5'
           memory: 2G
-        reservations:
-          memory: 1G
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4040/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   proxy:
     image: nginx:alpine
-    container_name: proxy_${INSTANCE_NAME}
+    container_name: ${INSTANCE_NAME}_proxy
     restart: unless-stopped
     ports:
-      - "${PORT:-8081}:80"
+      - "${PROXY_PORT}:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./logs/nginx:/var/log/nginx
     networks:
       - earnapp_network
     depends_on:
@@ -39,39 +44,44 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.2'
           memory: 512M
-        reservations:
-          memory: 256M
+          cpus: '0.2'
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   watchtower:
     image: containrrr/watchtower
-    container_name: watchtower_${INSTANCE_NAME}
+    container_name: ${INSTANCE_NAME}_watchtower
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval 30 --cleanup earnapp_${INSTANCE_NAME} proxy_${INSTANCE_NAME}
+    command: --interval 30 --cleanup earnapp proxy
     networks:
       - earnapp_network
     deploy:
       resources:
         limits:
-          cpus: '0.1'
           memory: 256M
-        reservations:
-          memory: 128M
+          cpus: '0.1'
 
   dashboard:
-    image: earnapp/dashboard:latest
-    container_name: dashboard_${INSTANCE_NAME}
+    image: ghcr.io/earnapp/dashboard:latest
+    container_name: ${INSTANCE_NAME}_dashboard
     restart: unless-stopped
     ports:
-      - "${DASHBOARD_PORT:-8082}:80"
+      - "8080:8080"
     environment:
-      - INSTANCE_NAME=${INSTANCE_NAME}
-      - INSTANCE_UUID=${INSTANCE_UUID}
+      - EARNAPP_UUID=${INSTANCE_UUID}
+      - PROXY_ENABLED=${PROXY_ENABLED}
+      - PROXY_HOST=${PROXY_HOST}
+      - PROXY_PORT=${PROXY_PORT}
+      - PROXY_USERNAME=${PROXY_USERNAME}
+      - PROXY_PASSWORD=${PROXY_PASSWORD}
     volumes:
-      - ./dashboard_data:/app/data
+      - ./data:/data
     networks:
       - earnapp_network
     depends_on:
@@ -79,11 +89,18 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.2'
           memory: 512M
-        reservations:
-          memory: 256M
+          cpus: '0.2'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 networks:
   earnapp_network:
-    driver: bridge 
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.7.0/27 
