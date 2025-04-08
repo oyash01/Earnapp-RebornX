@@ -141,16 +141,15 @@ class EarnAppManager:
                 for key, value in env_content.items():
                     f.write(f"{key}={value}\n")
 
-            # Check if docker-compose.yml.template exists
-            template_path = os.path.join(self.config_dir, "docker-compose.yml.template")
-            if not os.path.exists(template_path):
-                logging.error(f"docker-compose.yml.template not found in {self.config_dir}")
-                print(f"{Fore.RED}Error: docker-compose.yml.template not found in config directory.")
-                print(f"{Fore.YELLOW}Please make sure the template file exists.")
-                return False
-
             # Copy docker-compose.yml template
             try:
+                template_path = os.path.join(self.config_dir, "docker-compose.yml.template")
+                if not os.path.exists(template_path):
+                    logging.error(f"docker-compose.yml.template not found in {self.config_dir}")
+                    print(f"{Fore.RED}Error: docker-compose.yml.template not found in config directory.")
+                    print(f"{Fore.YELLOW}Please make sure the template file exists.")
+                    return False
+                    
                 shutil.copy(
                     template_path,
                     os.path.join(instance_dir, "docker-compose.yml")
@@ -175,6 +174,26 @@ class EarnAppManager:
                 logging.warning(f"nginx.conf.template not found in {self.config_dir}")
                 print(f"{Fore.YELLOW}Warning: nginx.conf.template not found in config directory.")
                 print(f"{Fore.YELLOW}Proxy service may not work correctly.")
+
+            # Copy other template files if they exist
+            template_files = [
+                "logging.yaml.template",
+                "proxies.yaml.template",
+                "config.yaml.template"
+            ]
+            
+            for template_file in template_files:
+                template_path = os.path.join(self.config_dir, template_file)
+                if os.path.exists(template_path):
+                    try:
+                        target_file = template_file.replace(".template", "")
+                        shutil.copy(
+                            template_path,
+                            os.path.join(instance_dir, target_file)
+                        )
+                    except Exception as e:
+                        logging.warning(f"Error copying {template_file}: {str(e)}")
+                        print(f"{Fore.YELLOW}Warning: Error copying {template_file}: {str(e)}")
 
             logging.info(f"Created instance {instance_name} with UUID {instance_uuid}")
             print(f"{Fore.GREEN}Successfully created instance {instance_name} with UUID {instance_uuid}")
