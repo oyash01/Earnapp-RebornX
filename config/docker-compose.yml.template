@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   earnapp:
-    image: fr3nd/earnapp:latest
+    image: earnapp/earnapp:latest
     container_name: ${INSTANCE_NAME}_earnapp
     restart: unless-stopped
     environment:
@@ -35,7 +35,7 @@ services:
     ports:
       - "${PROXY_PORT}:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./logs/nginx:/var/log/nginx
     networks:
       - earnapp_network

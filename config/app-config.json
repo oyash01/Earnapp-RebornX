@@ -103,5 +103,63 @@
       "mem_reservation": "${APP_MEM_RESERV_LITTLE}",
       "mem_limit": "${APP_MEM_LIMIT_LITTLE}"
     }
+  },
+  "app": {
+    "name": "EARNAPP",
+    "dashboard_link": "https://earnapp.com/dashboard",
+    "compose_config": {
+      "container_name": "earnapp_instance",
+      "image": "earnapp/earnapp:latest",
+      "environment": {
+        "UUID": "",
+        "PROXY_ENABLED": "false",
+        "PROXY_HOST": "",
+        "PROXY_PORT": "",
+        "PROXY_USERNAME": "",
+        "PROXY_PASSWORD": ""
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "10m",
+          "max-file": "3"
+        }
+      }
+    },
+    "flags": {
+      "uuid": {
+        "length": 32,
+        "claim_url_base": "https://earnapp.com/r/"
+      }
+    }
+  },
+  "proxy": {
+    "enabled": false,
+    "host": "",
+    "port": "",
+    "username": "",
+    "password": "",
+    "type": "http"
+  },
+  "monitoring": {
+    "enabled": true,
+    "interval": 30,
+    "metrics": {
+      "cpu": true,
+      "memory": true,
+      "network": true,
+      "disk": true
+    }
+  },
+  "notifications": {
+    "enabled": false,
+    "type": "email",
+    "settings": {
+      "email": "",
+      "smtp_server": "",
+      "smtp_port": 587,
+      "smtp_username": "",
+      "smtp_password": ""
+    }
   }
 }
